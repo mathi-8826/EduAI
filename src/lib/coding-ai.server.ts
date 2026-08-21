@@ -1232,7 +1232,7 @@ Provide concise, constructive code feedback (2-4 bullet points) focusing on code
 `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-3.5-flash-lite",
       contents: prompt,
       config: {
         temperature: 0.5,
