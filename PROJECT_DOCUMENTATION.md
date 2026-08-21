@@ -166,7 +166,7 @@ flowchart LR
 | Frontend | React 19 | Student and admin user interfaces |
 | Framework | TanStack Start, TanStack Router, Vite | SSR-capable app, file routes, server functions |
 | Backend | TanStack server functions (Nitro / Vite server entry) | Authenticated generation, evaluation, admin APIs |
-| AI | Google Gemini (`@google/genai`; models include `gemini-3.5-flash-lite`, `gemini-2.5-flash`) | MCQs, coding problems, interview Q&A and feedback |
+| AI | Google Gemini (`@google/genai`; models include `gemini-3.5-flash-lite`, `gemini-2.5-flash-lite`) | MCQs, coding problems, interview Q&A and feedback |
 | Authentication | Supabase Auth | Email/password and magic-link sessions |
 | Database | Supabase PostgreSQL | Profiles, tests, submissions, interviews |
 | Storage | Supabase Storage (`avatars`) | Profile photos |

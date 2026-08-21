@@ -352,7 +352,7 @@ function parsePythonValue(val: unknown): unknown {
   // Try standard JSON parse first (handles arrays, objects, numbers, booleans, null)
   try {
     return JSON.parse(trimmed);
-  } catch {}
+  } catch { }
 
   // Try Python-style single-quoted strings or tuples like "('alice', 85, 90.5)"
   try {
@@ -361,7 +361,7 @@ function parsePythonValue(val: unknown): unknown {
       .replace(/\)/g, "]")
       .replace(/'/g, '"');
     return JSON.parse(jsonified);
-  } catch {}
+  } catch { }
 
   // Return as-is (it's genuinely a string argument)
   return val;
@@ -913,7 +913,7 @@ print(json.dumps(results, default=str))
         const executionTimeMs = Math.round(performance.now() - startTime);
         try {
           fs.rmSync(tmpDir, { recursive: true, force: true });
-        } catch {}
+        } catch { }
 
         if (err || !stdout.trim()) {
           const errText = stderr.trim() || err?.message || "Execution failed";
@@ -968,8 +968,8 @@ print(json.dumps(results, default=str))
             passedCount === totalCount
               ? "accepted"
               : passedCount > 0
-              ? "partial"
-              : "failed";
+                ? "partial"
+                : "failed";
 
           resolve({
             results,
@@ -1021,7 +1021,7 @@ export async function evaluateJavaServer(
           .join("\n");
         try {
           fs.rmSync(tmpDir, { recursive: true, force: true });
-        } catch {}
+        } catch { }
 
         const results = testCases.map((tc) => ({
           passed: false,
@@ -1048,7 +1048,7 @@ export async function evaluateJavaServer(
       if (testCases.length === 0) {
         try {
           fs.rmSync(tmpDir, { recursive: true, force: true });
-        } catch {}
+        } catch { }
         resolve({
           results: [],
           passed: 0,
@@ -1084,7 +1084,7 @@ export async function evaluateJavaServer(
             if (completed === testCases.length) {
               try {
                 fs.rmSync(tmpDir, { recursive: true, force: true });
-              } catch {}
+              } catch { }
 
               const passedCount = results.filter((r) => r.passed).length;
               const totalCount = results.length;
@@ -1093,8 +1093,8 @@ export async function evaluateJavaServer(
                 passedCount === totalCount
                   ? "accepted"
                   : passedCount > 0
-                  ? "partial"
-                  : "failed";
+                    ? "partial"
+                    : "failed";
 
               resolve({
                 results,
@@ -1178,8 +1178,8 @@ export async function evaluateSqlServer(
           error: isPass
             ? null
             : !colsMatch
-            ? `Column mismatch. Expected columns: [${expectedCols.join(", ")}], Got: [${actualCols.join(", ")}]`
-            : `Row mismatch. Expected ${expectedRows.length} rows, Got ${actualRows2D.length} rows.`,
+              ? `Column mismatch. Expected columns: [${expectedCols.join(", ")}], Got: [${actualCols.join(", ")}]`
+              : `Row mismatch. Expected ${expectedRows.length} rows, Got ${actualRows2D.length} rows.`,
         },
       ],
       passed: isPass ? 1 : 0,
@@ -1232,7 +1232,7 @@ Provide concise, constructive code feedback (2-4 bullet points) focusing on code
 `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: prompt,
       config: {
         temperature: 0.5,
