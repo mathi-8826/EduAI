@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /auth
+Disallow: /vqr
+Disallow: /coding
+Disallow: /interview
+Disallow: /profile
