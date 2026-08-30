@@ -3,10 +3,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function assertAdmin(context: { supabase: any; userId: string }) {
   const { data, error } = await context.supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", context.userId)
+    .from("admin_profiles")
+    .select("role, is_active")
+    .eq("id", context.userId)
     .eq("role", "admin")
+    .eq("is_active", true)
     .maybeSingle();
   if (error || !data) throw new Error("Forbidden: admin access required");
 }
@@ -18,7 +19,7 @@ export const listStudents = createServerFn({ method: "GET" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [{ data: profiles, error }, { data: results }, { data: subs }, { data: roles }] =
+    const [{ data: profiles, error }, { data: results }, { data: subs }, { data: adminRows }] =
       await Promise.all([
         supabaseAdmin
           .from("profiles")
@@ -26,12 +27,12 @@ export const listStudents = createServerFn({ method: "GET" })
           .order("created_at", { ascending: false }),
         supabaseAdmin.from("vqr_results").select("user_id, score, total"),
         supabaseAdmin.from("coding_submissions").select("user_id, status, question_id"),
-        supabaseAdmin.from("user_roles").select("user_id, role"),
+        supabaseAdmin.from("admin_profiles").select("id, role"),
       ]);
 
     if (error) throw new Error(error.message);
 
-    const adminIds = new Set((roles ?? []).filter((r) => r.role === "admin").map((r) => r.user_id));
+    const adminIds = new Set((adminRows ?? []).filter((r: any) => r.role === "admin").map((r: any) => r.id));
 
     const students = (profiles ?? [])
       .filter((p) => !adminIds.has(p.id))
@@ -96,9 +97,9 @@ export const deleteStudent = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: roleRow } = await supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", data.studentId)
+      .from("admin_profiles")
+      .select("role, is_active")
+      .eq("id", data.studentId)
       .eq("role", "admin")
       .maybeSingle();
     if (roleRow) throw new Error("Cannot delete an admin account");

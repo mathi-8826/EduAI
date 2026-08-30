@@ -6,8 +6,6 @@ import { Shield, Lock, User as UserIcon, Users, LogOut, ChevronDown, ChevronUp, 
 import { supabase } from "@/integrations/supabase/client";
 import { listStudents, deleteStudent, resetStudentProgress } from "@/lib/admin.functions";
 
-const ADMIN_EMAIL = "admin@prepai.local";
-
 export const Route = createFileRoute("/admin")({
   ssr: false,
   head: () => ({
@@ -43,8 +41,21 @@ function AdminPage() {
   const [resettingId, setResettingId] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setAuthed(data.user?.email === ADMIN_EMAIL);
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) {
+        setAuthed(false);
+        setChecking(false);
+        return;
+      }
+      const { data: adminRow } = await supabase
+        .from("admin_profiles")
+        .select("role, is_active")
+        .eq("id", data.user.id)
+        .eq("role", "admin")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      setAuthed(Boolean(adminRow));
       setChecking(false);
     });
   }, []);
@@ -52,13 +63,31 @@ function AdminPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const email = username.includes("@") ? username.trim() : `${username.trim().toLowerCase()}@prepai.local`;
+    const email = username.trim();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error || data.user?.email !== ADMIN_EMAIL) {
-      toast.error("Invalid admin credentials");
+
+    if (error || !data.user) {
+      setLoading(false);
+      toast.error(error?.message || "Invalid credentials");
       return;
     }
+
+    const { data: adminRow, error: adminErr } = await supabase
+      .from("admin_profiles")
+      .select("role, is_active")
+      .eq("id", data.user.id)
+      .eq("role", "admin")
+      .eq("is_active", true)
+      .maybeSingle();
+
+    setLoading(false);
+
+    if (adminErr || !adminRow) {
+      await supabase.auth.signOut();
+      toast.error("Access Denied: Account not found in admin_profiles or inactive");
+      return;
+    }
+
     setAuthed(true);
     toast.success("Welcome, admin");
   };

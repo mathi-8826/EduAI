@@ -80,7 +80,7 @@ Career Ace AI (in-app branding: **EduAI**) is a web platform that helps students
 
 **Implemented** (`/admin` and server functions):
 
-- Admin sign-in (Supabase user `admin@prepai.local`; server also requires `user_roles.role = 'admin'`)
+- Admin sign-in (Supabase Auth email/password; server and client require valid `admin_profiles` record with `role = 'admin'` and `is_active = true`)
 - List students with VQR averages and coding attempt/solved counts
 - Reset a student’s `vqr_results`, `coding_submissions`, and `ai_feedback`
 - Delete a student account (cannot delete self or another admin)

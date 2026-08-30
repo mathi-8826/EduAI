@@ -20,8 +20,6 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-const ADMIN_EMAIL = "admin@prepai.local";
-
 function AuthPage() {
   const { mode } = Route.useSearch();
   const navigate = useNavigate();
@@ -38,34 +36,63 @@ function AuthPage() {
   const [year, setYear] = useState("");
 
   const [existingEmail, setExistingEmail] = useState<string | null>(null);
+  const [isAdminUser, setIsAdminUser] = useState<boolean>(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       setExistingEmail(data.user?.email ?? null);
+      if (data.user) {
+        const { data: adminRow } = await supabase
+          .from("admin_profiles")
+          .select("role, is_active")
+          .eq("id", data.user.id)
+          .eq("role", "admin")
+          .eq("is_active", true)
+          .maybeSingle();
+        setIsAdminUser(Boolean(adminRow));
+      }
     });
   }, []);
 
   const continueSession = () => {
-    navigate({ to: existingEmail === ADMIN_EMAIL ? "/admin" : "/dashboard" });
+    navigate({ to: isAdminUser ? "/admin" : "/dashboard" });
   };
 
   const signOutExisting = async () => {
     await supabase.auth.signOut();
     setExistingEmail(null);
+    setIsAdminUser(false);
     toast.success("Signed out — you can sign in with another account.");
   };
 
   const handleAdminSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const adminEmail = email.includes("@") ? email.trim() : `${email.trim().toLowerCase()}@prepai.local`;
+    const adminEmail = email.trim();
     const { data, error } = await supabase.auth.signInWithPassword({ email: adminEmail, password });
-    setLoading(false);
-    if (error || data.user?.email !== ADMIN_EMAIL) {
-      if (data.user && data.user.email !== ADMIN_EMAIL) await supabase.auth.signOut();
-      toast.error("Invalid admin credentials");
+
+    if (error || !data.user) {
+      setLoading(false);
+      toast.error(error?.message || "Invalid admin credentials");
       return;
     }
+
+    const { data: adminRow } = await supabase
+      .from("admin_profiles")
+      .select("role, is_active")
+      .eq("id", data.user.id)
+      .eq("role", "admin")
+      .eq("is_active", true)
+      .maybeSingle();
+
+    setLoading(false);
+
+    if (!adminRow) {
+      await supabase.auth.signOut();
+      toast.error("Access Denied: You do not have administrator permissions or your account is inactive.");
+      return;
+    }
+
     toast.success("Welcome, admin");
     navigate({ to: "/admin" });
   };
