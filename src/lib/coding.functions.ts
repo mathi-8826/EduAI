@@ -139,30 +139,13 @@ export const generateCodingProblem = createServerFn({
   // Generate and save problem
   // ----------------------------------------------------------
 
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     console.log(
-      `Generating ${data.difficulty} ${data.language} problem...`
+      `Generating ${data.difficulty} ${data.language} problem for user ${context.userId}...`
     );
-
-    // ========================================================
-    // 1. Generate problem using Gemini
-    // ========================================================
-
-    // IMPORTANT:
-    // No LOVABLE_API_KEY is required here.
-    //
-    // generateProblemWithAI() internally uses:
-    //
-    // GEMINI_API_KEY
-    //
-    // from the server environment.
 
     const problem =
       await generateProblemWithAI(data);
-
-    // ========================================================
-    // 2. Generate unique slug
-    // ========================================================
 
     const cleanTitle =
       problem.title
@@ -179,104 +162,55 @@ export const generateCodingProblem = createServerFn({
     const slug =
       `${cleanTitle}-${randomId}`;
 
-    // ========================================================
-    // 3. Connect to Supabase
-    // ========================================================
-
     const {
       supabaseAdmin,
     } = await import(
       "@/integrations/supabase/client.server"
     );
 
-    // ========================================================
-    // 4. Save coding problem
-    // ========================================================
-
     const {
+      data: inserted,
       error,
     } = await supabaseAdmin
       .from("coding_questions")
       .insert({
-        slug,
+        user_id: context.userId,
+        title: problem.title,
+        description: problem.description,
+        input_format: (problem as any).input_format || null,
+        output_format: (problem as any).output_format || null,
+        constraints: problem.constraints || null,
+        examples: JSON.parse(JSON.stringify(problem.examples)),
+        topic: data.topic,
+        subtopic: data.concept,
+        difficulty: data.difficulty,
+        language: data.language,
+        starter_code: problem.starter_code,
+        test_cases: JSON.parse(JSON.stringify(problem.test_cases)),
+        hints: problem.hints,
+      })
+      .select("id")
+      .single();
 
-        title:
-          problem.title,
-
-        difficulty:
-          data.difficulty,
-
-        topic:
-          data.topic,
-
-        language:
-          data.language,
-
-        tags: [
-          data.concept,
-        ],
-
-        description:
-          problem.description,
-
-        constraints:
-          problem.constraints ||
-          null,
-
-        sql_schema:
-          problem.sql_schema ??
-          null,
-
-        examples:
-          JSON.parse(
-            JSON.stringify(
-              problem.examples
-            )
-          ),
-
-        hints:
-          problem.hints,
-
-        starter_code: {
-          [data.language]:
-            problem.starter_code,
-        },
-
-        test_cases:
-          JSON.parse(
-            JSON.stringify(
-              problem.test_cases
-            )
-          ),
-      });
-
-    // ========================================================
-    // 5. Handle database error
-    // ========================================================
-
-    if (error) {
+    if (error || !inserted) {
       console.error(
         "Failed to save coding problem:",
         error
       );
 
       throw new Error(
-        `Could not save coding problem: ${error.message}`
+        `Could not save coding problem: ${error?.message || 'Unknown error'}`
       );
     }
 
-    // ========================================================
-    // 6. Return result to frontend
-    // ========================================================
-
     console.log(
-      `Coding problem created: ${slug}`
+      `Coding problem created for user ${context.userId}: ${inserted.id}`
     );
 
     return {
-      slug,
-      tests:
-        problem.test_cases.length,
+      id: inserted.id,
+      slug: inserted.id,
+      tests: problem.test_cases.length,
     };
   });
 
@@ -630,9 +564,9 @@ export const submitCodingCode = createServerFn({ method: "POST" })
         code: data.code,
         status: summary.status,
         score: summary.score,
-        passed_tests: summary.passed,
-        total_tests: summary.total,
-        execution_time_ms: summary.executionTimeMs,
+        passed_test_cases: summary.passed,
+        total_test_cases: summary.total,
+        execution_time: summary.executionTimeMs,
       })
       .select("id")
       .single();

@@ -63,8 +63,7 @@ const DIFFICULTIES: { key: Difficulty; label: string; hint: string; style: strin
   { key: "hard", label: "Hard", hint: "Top-tier level", style: "text-rose-600 dark:text-rose-400" },
 ];
 
-type Recent = { id: string; slug: string; title: string; difficulty: Difficulty; topic: string; language: string };
-
+type Recent = { id: string; title: string; difficulty: Difficulty; topic: string };
 
 export const Route = createFileRoute("/_authenticated/coding/")({
   head: () => ({
@@ -91,18 +90,22 @@ function CodingSetup() {
 
   useEffect(() => {
     (async () => {
+      const { data: userRes } = await supabase.auth.getUser();
+      if (!userRes.user) return;
       const { data: qs } = await supabase
         .from("coding_questions")
-        .select("id,slug,title,difficulty,topic")
+        .select("id,title,difficulty,topic")
+        .eq("user_id", userRes.user.id)
         .order("created_at", { ascending: false })
         .limit(10);
       const { data: subs } = await supabase
         .from("coding_submissions")
-        .select("question_id,status");
+        .select("question_id,status")
+        .eq("user_id", userRes.user.id);
       setRecent((qs ?? []) as Recent[]);
       setSolved(
         new Set(
-          (subs ?? []).filter((s) => s.status === "accepted").map((s) => s.question_id as string)
+          (subs ?? []).filter((s) => s.status === "accepted" || s.status === "Pass").map((s) => s.question_id as string)
         )
       );
     })();
@@ -223,7 +226,7 @@ function CodingSetup() {
                 <Link
                   key={q.id}
                   to="/coding/$slug"
-                  params={{ slug: q.slug }}
+                  params={{ slug: q.id }}
                   className="group flex items-center gap-3 rounded-xl border bg-card p-3 hover:border-primary/50 transition-all"
                 >
                   {solved.has(q.id) ? (

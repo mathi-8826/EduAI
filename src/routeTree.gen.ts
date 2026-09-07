@@ -15,6 +15,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthenticatedAiInterviewRouteImport } from './routes/_authenticated/ai-interview'
+import { Route as AuthenticatedBadgesRouteImport } from './routes/_authenticated/badges'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedInterviewRouteImport } from './routes/_authenticated/interview'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
@@ -54,6 +55,11 @@ const AuthenticatedAiInterviewRoute =
     path: '/ai-interview',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedBadgesRoute = AuthenticatedBadgesRouteImport.update({
+  id: '/badges',
+  path: '/badges',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ai-interview': typeof AuthenticatedAiInterviewRoute
+  '/badges': typeof AuthenticatedBadgesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/interview': typeof AuthenticatedInterviewRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ai-interview': typeof AuthenticatedAiInterviewRoute
+  '/badges': typeof AuthenticatedBadgesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/interview': typeof AuthenticatedInterviewRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/ai-interview': typeof AuthenticatedAiInterviewRoute
+  '/_authenticated/badges': typeof AuthenticatedBadgesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/interview': typeof AuthenticatedInterviewRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/sitemap.xml'
     | '/ai-interview'
+    | '/badges'
     | '/dashboard'
     | '/interview'
     | '/profile'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/sitemap.xml'
     | '/ai-interview'
+    | '/badges'
     | '/dashboard'
     | '/interview'
     | '/profile'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/sitemap.xml'
     | '/_authenticated/ai-interview'
+    | '/_authenticated/badges'
     | '/_authenticated/dashboard'
     | '/_authenticated/interview'
     | '/_authenticated/profile'
@@ -244,6 +256,13 @@ declare module '@tanstack/react-router' {
       path: '/ai-interview'
       fullPath: '/ai-interview'
       preLoaderRoute: typeof AuthenticatedAiInterviewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/badges': {
+      id: '/_authenticated/badges'
+      path: '/badges'
+      fullPath: '/badges'
+      preLoaderRoute: typeof AuthenticatedBadgesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -307,6 +326,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAiInterviewRoute: typeof AuthenticatedAiInterviewRoute
+  AuthenticatedBadgesRoute: typeof AuthenticatedBadgesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedInterviewRoute: typeof AuthenticatedInterviewRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
@@ -319,6 +339,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAiInterviewRoute: AuthenticatedAiInterviewRoute,
+  AuthenticatedBadgesRoute: AuthenticatedBadgesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedInterviewRoute: AuthenticatedInterviewRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,

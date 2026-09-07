@@ -18,16 +18,16 @@ import type { CodingLanguage } from "@/lib/coding-ai.server";
 
 type Question = {
   id: string;
-  slug: string;
   title: string;
   difficulty: "easy" | "medium" | "hard";
   topic: string;
+  subtopic?: string;
   language?: CodingLanguage;
   description: string;
   constraints: string | null;
   examples: Array<{ input: string; output: string; explanation?: string }>;
   hints: string[];
-  starter_code: Record<string, string>;
+  starter_code: string | Record<string, string>;
   test_cases: Array<any>;
 };
 
@@ -43,10 +43,10 @@ type Submission = {
   id: string;
   status: string;
   score: number;
-  passed_tests: number;
-  total_tests: number;
+  passed_test_cases: number;
+  total_test_cases: number;
   language: string;
-  submitted_at: string;
+  created_at: string;
 };
 
 export const Route = createFileRoute("/_authenticated/coding/$slug")({
@@ -76,7 +76,7 @@ function SolveProblem() {
       const { data, error } = await supabase
         .from("coding_questions")
         .select("*")
-        .eq("slug", slug)
+        .eq("id", slug)
         .maybeSingle();
 
       if (error || !data) {
@@ -89,16 +89,16 @@ function SolveProblem() {
 
       setQuestion(q);
       const starter =
-        q.starter_code?.[qLang] ||
-        q.starter_code?.python ||
-        (typeof q.starter_code === "string" ? q.starter_code : "");
+        typeof q.starter_code === "string"
+          ? q.starter_code
+          : (q.starter_code?.[qLang] || q.starter_code?.python || "");
       setCode(starter);
 
       const { data: subs } = await supabase
         .from("coding_submissions")
-        .select("id,status,score,passed_tests,total_tests,language,submitted_at")
+        .select("id,status,score,passed_test_cases,total_test_cases,language,created_at")
         .eq("question_id", q.id)
-        .order("submitted_at", { ascending: false });
+        .order("created_at", { ascending: false });
       setHistory((subs ?? []) as Submission[]);
       setLoading(false);
     })();
@@ -370,7 +370,7 @@ function SubmissionsList({ history }: { history: Submission[] }) {
     <div className="space-y-2">
       {history.map((s) => (
         <div key={s.id} className="flex items-center gap-3 rounded-md border p-3 text-sm">
-          {s.status === "accepted" ? (
+          {s.status === "accepted" || s.status === "Pass" || s.status === "Passed" ? (
             <CheckCircle2 className="size-4 text-emerald-500" />
           ) : (
             <XCircle className="size-4 text-rose-500" />
@@ -378,8 +378,8 @@ function SubmissionsList({ history }: { history: Submission[] }) {
           <div className="flex-1">
             <div className="font-medium capitalize">{s.status}</div>
             <div className="text-xs text-muted-foreground">
-              {s.passed_tests}/{s.total_tests} tests · {s.language} ·{" "}
-              {new Date(s.submitted_at).toLocaleString()}
+              {s.passed_test_cases}/{s.total_test_cases} tests · {s.language} ·{" "}
+              {s.created_at ? new Date(s.created_at).toLocaleString() : "Just now"}
             </div>
           </div>
           <div className="text-sm font-semibold">{s.score}%</div>

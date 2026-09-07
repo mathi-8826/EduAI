@@ -236,97 +236,108 @@ export type Database = {
       }
       coding_questions: {
         Row: {
-          constraints: string | null
-          created_at: string
-          description: string
-          difficulty: Database["public"]["Enums"]["difficulty"]
-          examples: Json
-          hints: Json
           id: string
-          language: string
-          slug: string
-          sql_schema: string | null
-          starter_code: Json
-          tags: string[]
-          test_cases: Json
+          user_id: string
           title: string
-          topic: Database["public"]["Enums"]["coding_topic"]
+          description: string
+          input_format: string | null
+          output_format: string | null
+          constraints: string | null
+          examples: Json
+          topic: string
+          subtopic: string | null
+          difficulty: string
+          language: string
+          starter_code: string | Json | null
+          test_cases: Json
+          hints: Json
+          created_at: string
         }
         Insert: {
-          constraints?: string | null
-          created_at?: string
-          description: string
-          difficulty?: Database["public"]["Enums"]["difficulty"]
-          examples?: Json
-          hints?: Json
           id?: string
-          language?: string
-          slug: string
-          sql_schema?: string | null
-          starter_code?: Json
-          tags?: string[]
-          test_cases?: Json
+          user_id: string
           title: string
-          topic: Database["public"]["Enums"]["coding_topic"]
+          description: string
+          input_format?: string | null
+          output_format?: string | null
+          constraints?: string | null
+          examples?: Json
+          topic: string
+          subtopic?: string | null
+          difficulty: string
+          language: string
+          starter_code?: string | Json | null
+          test_cases: Json
+          hints: Json
+          created_at?: string
         }
         Update: {
-          constraints?: string | null
-          created_at?: string
-          description?: string
-          difficulty?: Database["public"]["Enums"]["difficulty"]
-          examples?: Json
-          hints?: Json
           id?: string
-          language?: string
-          slug?: string
-          sql_schema?: string | null
-          starter_code?: Json
-          tags?: string[]
-          test_cases?: Json
+          user_id?: string
           title?: string
-          topic?: Database["public"]["Enums"]["coding_topic"]
+          description?: string
+          input_format?: string | null
+          output_format?: string | null
+          constraints?: string | null
+          examples?: Json
+          topic?: string
+          subtopic?: string | null
+          difficulty?: string
+          language?: string
+          starter_code?: string | Json | null
+          test_cases?: Json
+          hints?: Json
+          created_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "coding_questions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       coding_submissions: {
         Row: {
-          code: string
-          execution_time_ms: number | null
           id: string
-          language: string
-          passed_tests: number
           question_id: string
+          user_id: string
+          language: string
+          code: string
+          passed_test_cases: number
+          total_test_cases: number
           score: number
           status: string
-          submitted_at: string
-          total_tests: number
-          user_id: string
+          execution_time: number | null
+          created_at: string
         }
         Insert: {
-          code: string
-          execution_time_ms?: number | null
           id?: string
-          language: string
-          passed_tests?: number
           question_id: string
+          user_id: string
+          language: string
+          code: string
+          passed_test_cases?: number
+          total_test_cases: number
           score?: number
           status: string
-          submitted_at?: string
-          total_tests?: number
-          user_id: string
+          execution_time?: number | null
+          created_at?: string
         }
         Update: {
-          code?: string
-          execution_time_ms?: number | null
           id?: string
-          language?: string
-          passed_tests?: number
           question_id?: string
+          user_id?: string
+          language?: string
+          code?: string
+          passed_test_cases?: number
+          total_test_cases?: number
           score?: number
           status?: string
-          submitted_at?: string
-          total_tests?: number
-          user_id?: string
+          execution_time?: number | null
+          created_at?: string
         }
         Relationships: [
           {
@@ -336,7 +347,62 @@ export type Database = {
             referencedRelation: "coding_questions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "coding_submissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
         ]
+      }
+      login_streaks: {
+        Row: {
+          user_id: string
+          current_streak: number
+          longest_streak: number
+          last_login_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          current_streak?: number
+          longest_streak?: number
+          last_login_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          current_streak?: number
+          longest_streak?: number
+          last_login_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_badges: {
+        Row: {
+          id: string
+          user_id: string
+          badge_type: string
+          badge_level: string
+          achieved_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          badge_type?: string
+          badge_level: string
+          achieved_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          badge_type?: string
+          badge_level?: string
+          achieved_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -519,6 +585,86 @@ export type Database = {
           id?: string
           title?: string
           topic?: string
+        }
+        Relationships: []
+      }
+      badges: {
+        Row: {
+          id: string
+          badge_type: string
+          badge_level: string
+          requirement_value: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          badge_type: string
+          badge_level: string
+          requirement_value: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          badge_type?: string
+          badge_level?: string
+          requirement_value?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      user_badges: {
+        Row: {
+          id: string
+          user_id: string
+          badge_id: string
+          achieved_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          badge_id: string
+          achieved_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          badge_id?: string
+          achieved_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      login_streaks: {
+        Row: {
+          id: string
+          user_id: string
+          current_streak: number
+          longest_streak: number
+          last_login_date: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          current_streak?: number
+          longest_streak?: number
+          last_login_date?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          current_streak?: number
+          longest_streak?: number
+          last_login_date?: string
+          updated_at?: string
         }
         Relationships: []
       }

@@ -256,7 +256,7 @@ async function generateWithRetry(
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await ai.models.generateContent({
-        model: "gemini-3.5-flash-lite",
+        model: "gemini-2.5-flash",
         contents: prompt,
         config: {
           temperature: 0.7,

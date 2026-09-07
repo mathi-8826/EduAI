@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Brain, Code2, LogOut, Sparkles, Flame, User as UserIcon, LineChart as LineChartIcon, ChevronDown, ChevronUp } from "lucide-react";
+import { Brain, Code2, LogOut, Sparkles, Flame, User as UserIcon, LineChart as LineChartIcon, ChevronDown, ChevronUp, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -76,8 +76,9 @@ function Dashboard() {
           .limit(200),
         supabase
           .from("coding_submissions")
-          .select("id, score, passed_tests, total_tests, submitted_at, coding_questions(title)")
-          .order("submitted_at", { ascending: false })
+          .select("id, score, passed_test_cases, total_test_cases, created_at, coding_questions(title)")
+          .eq("user_id", user.user.id)
+          .order("created_at", { ascending: false })
           .limit(200),
       ]);
       setProfile(p as Profile | null);
@@ -86,10 +87,10 @@ function Dashboard() {
         id: string; score: number; total: number; created_at: string; vqr_tests: { title: string } | null;
       }[];
       const codingRows = (c ?? []) as {
-        id: string; passed_tests: number; total_tests: number; submitted_at: string; coding_questions: { title: string } | null;
+        id: string; score: number; passed_test_cases: number; total_test_cases: number; created_at: string; coding_questions: { title: string } | null;
       }[];
 
-      const dates = [...vqrRows.map((x) => x.created_at), ...codingRows.map((x) => x.submitted_at)];
+      const dates = [...vqrRows.map((x) => x.created_at), ...codingRows.map((x) => x.created_at)];
       setStreak(computeStreak(dates));
       setActiveToday(dates.some((d) => dayKey(new Date(d)) === dayKey(new Date())));
 
@@ -102,10 +103,10 @@ function Dashboard() {
       }));
       const codingTests: RecentTest[] = codingRows.map((x) => ({
         id: x.id,
-        label: x.coding_questions?.title ?? "Coding Problem",
+        label: x.coding_questions?.title ?? "Coding Challenge",
         kind: "Coding",
-        pct: x.total_tests ? Math.round((x.passed_tests / x.total_tests) * 100) : 0,
-        date: x.submitted_at,
+        pct: x.score ?? (x.total_test_cases ? Math.round((x.passed_test_cases / x.total_test_cases) * 100) : 0),
+        date: x.created_at,
       }));
 
       setRecent(
@@ -146,10 +147,7 @@ function Dashboard() {
             <Link to="/ai-interview" className="text-muted-foreground hover:text-foreground">AI Interview</Link>
           </nav>
           <div className="flex items-center gap-2">
-            <Link to="/profile" className="p-2 rounded-lg hover:bg-muted"><UserIcon className="size-4" /></Link>
-            <button onClick={handleSignOut} className="p-2 rounded-lg hover:bg-muted" aria-label="Sign out">
-              <LogOut className="size-4" />
-            </button>
+            <HeaderProfileDropdown onSignOut={handleSignOut} />
           </div>
         </div>
       </header>
@@ -265,6 +263,50 @@ function TrendChart({ title, data, color }: { title: string; data: { label: stri
             <Line type="monotone" dataKey="pct" stroke={color} strokeWidth={2} dot={{ r: 3 }} />
           </LineChart>
         </ResponsiveContainer>
+      )}
+    </div>
+  );
+}
+
+function HeaderProfileDropdown({ onSignOut }: { onSignOut: () => void }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="p-2 rounded-lg hover:bg-muted flex items-center gap-1.5 transition-colors"
+        aria-label="Profile menu"
+      >
+        <UserIcon className="size-4" />
+        <ChevronDown className="size-3 text-muted-foreground" />
+      </button>
+
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          className="absolute right-0 top-full mt-2 w-44 rounded-xl border bg-popover p-1.5 shadow-lg z-50 flex flex-col gap-1 text-sm animate-in fade-in slide-in-from-top-1"
+        >
+          <Link
+            to="/profile"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-foreground hover:bg-accent hover:text-accent-foreground font-medium"
+          >
+            <UserIcon className="size-4 text-muted-foreground" /> Profile
+          </Link>
+          <Link
+            to="/badges"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-amber-500 hover:bg-amber-500/10 font-medium"
+          >
+            <Award className="size-4 text-amber-500" /> Badges
+          </Link>
+          <div className="h-px bg-border my-1" />
+          <button
+            onClick={onSignOut}
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-rose-500 hover:bg-rose-500/10 font-medium w-full text-left"
+          >
+            <LogOut className="size-4 text-rose-500" /> Sign out
+          </button>
+        </div>
       )}
     </div>
   );
