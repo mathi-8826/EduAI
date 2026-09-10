@@ -41,23 +41,46 @@ function AdminPage() {
   const [resettingId, setResettingId] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) {
-        setAuthed(false);
-        setChecking(false);
+    let mounted = true;
+
+    const verifyAdminRole = async (user: any) => {
+      if (!user) {
+        if (mounted) {
+          setAuthed(false);
+          setChecking(false);
+        }
         return;
       }
       const { data: adminRow } = await supabase
         .from("admin_profiles")
         .select("role, is_active")
-        .eq("id", data.user.id)
+        .eq("id", user.id)
         .eq("role", "admin")
         .eq("is_active", true)
         .maybeSingle();
 
-      setAuthed(Boolean(adminRow));
-      setChecking(false);
+      if (mounted) {
+        setAuthed(Boolean(adminRow));
+        setChecking(false);
+      }
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (mounted) {
+        verifyAdminRole(session?.user);
+      }
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
+        verifyAdminRole(session?.user);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {

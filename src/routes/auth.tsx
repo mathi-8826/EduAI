@@ -39,20 +39,49 @@ function AuthPage() {
   const [isAdminUser, setIsAdminUser] = useState<boolean>(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      setExistingEmail(data.user?.email ?? null);
-      if (data.user) {
-        const { data: adminRow } = await supabase
-          .from("admin_profiles")
-          .select("role, is_active")
-          .eq("id", data.user.id)
-          .eq("role", "admin")
-          .eq("is_active", true)
-          .maybeSingle();
-        setIsAdminUser(Boolean(adminRow));
+    let mounted = true;
+
+    const checkAndRedirectSession = async (user: any) => {
+      if (!user || !mounted) return;
+      setExistingEmail(user.email ?? null);
+
+      const { data: adminRow } = await supabase
+        .from("admin_profiles")
+        .select("role, is_active")
+        .eq("id", user.id)
+        .eq("role", "admin")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      const isAdmin = Boolean(adminRow);
+      setIsAdminUser(isAdmin);
+
+      // Automatically redirect valid authenticated user to appropriate route
+      navigate({ to: isAdmin ? "/admin" : "/dashboard", replace: true });
+    };
+
+    // 1. Check current session on app/component load
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user && mounted) {
+        checkAndRedirectSession(session.user);
       }
     });
-  }, []);
+
+    // 2. Listen to auth state changes (OAuth callback, sign in/out)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user && mounted) {
+        checkAndRedirectSession(session.user);
+      } else if (event === "SIGNED_OUT") {
+        setExistingEmail(null);
+        setIsAdminUser(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   const continueSession = () => {
     navigate({ to: isAdminUser ? "/admin" : "/dashboard" });
@@ -101,7 +130,8 @@ function AuthPage() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const redirectUrl = `${window.location.origin}/dashboard`;
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const redirectUrl = `${origin}/dashboard`;
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -129,9 +159,10 @@ function AuthPage() {
   const handleMagic = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+      options: { emailRedirectTo: `${origin}/dashboard` },
     });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
@@ -140,15 +171,16 @@ function AuthPage() {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    const targetRedirect = role === "admin" ? `${window.location.origin}/admin` : `${window.location.origin}/dashboard`;
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const targetRedirect = role === "admin" ? `${origin}/admin` : `${origin}/dashboard`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: targetRedirect,
       },
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error(error.message);
     }
   };
