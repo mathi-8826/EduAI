@@ -1,4 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { useAuth } from "@/components/AuthProvider";
 import { Brain, Code2, LineChart, Sparkles, Target, Trophy } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -16,6 +18,14 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
+  const navigate = useNavigate();
+  const { session, loading, isAdmin } = useAuth();
+
+  useEffect(() => {
+    if (!loading && session) {
+      navigate({ to: isAdmin ? "/admin" : "/dashboard", replace: true });
+    }
+  }, [loading, session, isAdmin, navigate]);
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}

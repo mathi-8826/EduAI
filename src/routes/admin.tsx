@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Shield, Lock, User as UserIcon, Users, LogOut, ChevronDown, ChevronUp, Trash2, Loader2, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { listStudents, deleteStudent, resetStudentProgress } from "@/lib/admin.functions";
+import { useAuth } from "@/components/AuthProvider";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -28,6 +29,8 @@ function AdminPage() {
   const fetchStudents = useServerFn(listStudents);
   const removeStudent = useServerFn(deleteStudent);
   const resetStudent = useServerFn(resetStudentProgress);
+  const { user, loading: authLoading, isAdmin, signOut: globalSignOut } = useAuth();
+
   const [checking, setChecking] = useState(true);
   const [authed, setAuthed] = useState(false);
   const [username, setUsername] = useState("");
@@ -41,47 +44,11 @@ function AdminPage() {
   const [resettingId, setResettingId] = useState<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-
-    const verifyAdminRole = async (user: any) => {
-      if (!user) {
-        if (mounted) {
-          setAuthed(false);
-          setChecking(false);
-        }
-        return;
-      }
-      const { data: adminRow } = await supabase
-        .from("admin_profiles")
-        .select("role, is_active")
-        .eq("id", user.id)
-        .eq("role", "admin")
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (mounted) {
-        setAuthed(Boolean(adminRow));
-        setChecking(false);
-      }
-    };
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted) {
-        verifyAdminRole(session?.user);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) {
-        verifyAdminRole(session?.user);
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
+    if (!authLoading) {
+      setAuthed(Boolean(user && isAdmin));
+      setChecking(false);
+    }
+  }, [authLoading, user, isAdmin]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,7 +83,7 @@ function AdminPage() {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await globalSignOut();
     setAuthed(false);
     setShowStudents(false);
     setStudents(null);
@@ -176,7 +143,6 @@ function AdminPage() {
       setResettingId(null);
     }
   };
-
 
   if (checking) {
     return (
@@ -354,7 +320,6 @@ function AdminPage() {
                             </button>
                           </div>
                         </td>
-
                       </tr>
                     ))}
                   </tbody>

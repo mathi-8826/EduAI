@@ -1,7 +1,6 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Session } from "@supabase/supabase-js";
+import { useEffect } from "react";
+import { useAuth } from "@/components/AuthProvider";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -11,35 +10,13 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedLayout() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<Session | null>(null);
+  const { session, loading } = useAuth();
 
   useEffect(() => {
-    let mounted = true;
-
-    // 1. Fetch current session on initialization
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      if (!mounted) return;
-      setSession(initialSession);
-      setLoading(false);
-    });
-
-    // 2. Listen for auth state changes (OAuth callback, refresh, sign in/out)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
-      if (!mounted) return;
-      setSession(currentSession);
-      setLoading(false);
-
-      if (event === "SIGNED_OUT" || (!currentSession && event !== "INITIAL_SESSION")) {
-        navigate({ to: "/auth", replace: true });
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [navigate]);
+    if (!loading && !session) {
+      navigate({ to: "/auth", replace: true });
+    }
+  }, [loading, session, navigate]);
 
   // Wait for authentication state to finish loading before deciding to redirect
   if (loading) {
@@ -51,12 +28,12 @@ function AuthenticatedLayout() {
     );
   }
 
-  // If loading complete and no session exists, redirect to /auth
+  // If loading complete and no session exists, render nothing while redirect fires
   if (!session) {
-    navigate({ to: "/auth", replace: true });
     return null;
   }
 
   return <Outlet />;
 }
+
 

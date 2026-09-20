@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { Sparkles, Mail, Lock, User, Building2, GraduationCap, Calendar, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+import { useAuth } from "@/components/AuthProvider";
+
 type Search = { mode?: "signup" | "signin" | "magic" };
 
 export const Route = createFileRoute("/auth")({
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const { mode } = Route.useSearch();
   const navigate = useNavigate();
+  const { session, loading: authLoading, isAdmin: globalIsAdmin, signOut: globalSignOut } = useAuth();
   const [role, setRole] = useState<"student" | "admin">("student");
   const [tab, setTab] = useState<"signup" | "signin" | "magic">(mode ?? "signin");
   useEffect(() => { setTab(mode ?? "signin"); }, [mode]);
@@ -39,56 +42,22 @@ function AuthPage() {
   const [isAdminUser, setIsAdminUser] = useState<boolean>(false);
 
   useEffect(() => {
-    let mounted = true;
-
-    const checkAndRedirectSession = async (user: any) => {
-      if (!user || !mounted) return;
-      setExistingEmail(user.email ?? null);
-
-      const { data: adminRow } = await supabase
-        .from("admin_profiles")
-        .select("role, is_active")
-        .eq("id", user.id)
-        .eq("role", "admin")
-        .eq("is_active", true)
-        .maybeSingle();
-
-      const isAdmin = Boolean(adminRow);
-      setIsAdminUser(isAdmin);
-
-      // Automatically redirect valid authenticated user to appropriate route
-      navigate({ to: isAdmin ? "/admin" : "/dashboard", replace: true });
-    };
-
-    // 1. Check current session on app/component load
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user && mounted) {
-        checkAndRedirectSession(session.user);
-      }
-    });
-
-    // 2. Listen to auth state changes (OAuth callback, sign in/out)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user && mounted) {
-        checkAndRedirectSession(session.user);
-      } else if (event === "SIGNED_OUT") {
-        setExistingEmail(null);
-        setIsAdminUser(false);
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [navigate]);
+    if (!authLoading && session?.user) {
+      setExistingEmail(session.user.email ?? null);
+      setIsAdminUser(globalIsAdmin);
+      navigate({ to: globalIsAdmin ? "/admin" : "/dashboard", replace: true });
+    } else if (!authLoading && !session) {
+      setExistingEmail(null);
+      setIsAdminUser(false);
+    }
+  }, [authLoading, session, globalIsAdmin, navigate]);
 
   const continueSession = () => {
     navigate({ to: isAdminUser ? "/admin" : "/dashboard" });
   };
 
   const signOutExisting = async () => {
-    await supabase.auth.signOut();
+    await globalSignOut();
     setExistingEmail(null);
     setIsAdminUser(false);
     toast.success("Signed out — you can sign in with another account.");
